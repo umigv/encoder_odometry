@@ -16,4 +16,4 @@ Clone this repository into your `catkin` workspace, then run `catkin_make`. Opti
 
 ## Contributors
 
-`encoder_odometry` is authored by Simrun Buttar and Gregory Meyer and is maintained by Gregory Meyer.
+`encoder_odometry` is authored and maintained by Gregory Meyer.

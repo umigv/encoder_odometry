@@ -7,7 +7,6 @@
                                         // umigv::get_parameter_or
 #include <umigv_utilities/utility.hpp>
 
-#include <cstdlib> // std::exit, EXIT_FAILURE
 #include <string> // std::string
 #include <thread> // std::thread
 #include <utility> // std::move
