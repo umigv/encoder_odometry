@@ -79,6 +79,8 @@ void CallbackHandler::update_state(
         (next_wheel_state.right - wheel_state_.right) * meters_per_rad_;
 
     base_state_.update(dx0, dx1, next_state.header.stamp);
+
+    wheel_state_ = next_wheel_state;
 }
 
 void CallbackHandler::publish_state(const ros::TimerEvent&) const {
