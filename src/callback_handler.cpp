@@ -76,7 +76,7 @@ void CallbackHandler::update_state(
     const f64 dx0 =
         (next_wheel_state.left - wheel_state_.left) * meters_per_rad_;
     const f64 dx1 =
-        (next_wheel_state.right - wheel_state_.right) * meters_per_rad_;
+        -(next_wheel_state.right - wheel_state_.right) * meters_per_rad_;
 
     base_state_.update(dx0, dx1, next_state.header.stamp);
 
