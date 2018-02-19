@@ -62,7 +62,7 @@ private:
     Pose2 pose_;
     Twist2 twist_;
     ros::Time timestamp_;
-    f64 track_;
+    const f64 track_;
 };
 
 } // namespace encoder_odometry

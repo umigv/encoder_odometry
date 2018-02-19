@@ -63,9 +63,9 @@ static Vector2 calculate_dr(const f64 theta, const f64 dxbar,
     f64 magnitude;
 
     if (dtheta != 0.0) {
-        magnitude = 2.0 * std::abs(dxbar / dtheta * std::sin(dtheta / 2.0));
+        magnitude = 2.0 * dxbar * std::abs(std::sin(dtheta / 2.0) / dtheta);
     } else {
-        magnitude = std::abs(dxbar);
+        magnitude = dxbar;
     }
 
     const f64 angle = theta + dtheta / 2.0;
@@ -80,7 +80,7 @@ static Vector2 calculate_v(const f64 dxbar, const f64 dt,
     const f64 magnitude = dxbar / dt;
     const f64 angle = next_theta;
 
-    return { magnitude * std::cos(angle), magnitude * std::sin(angle) };
+    return Vector2::from_polar(angle, magnitude);
 }
 
 BaseState::BaseState(const f64 track) noexcept : track_{ track } { }
