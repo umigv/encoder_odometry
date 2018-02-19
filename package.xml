@@ -1,17 +1,16 @@
 <package format="2">
     <name>encoder_odometry</name>
     <version>0.1.0</version>
-    <description>Publishes Odometry data from JointState data.</description>
+    <description>Publishes Odometry messages from JointState messages.</description>
     <maintainer email="gregjm@umich.edu">Gregory Meyer</maintainer>
     <license>BSD 3-Clause License</license>
 
     <url type="repository">https://github.com/umigv/encoder_odometry</url>
-    <author>Simrun Buttar</author>
     <author>Gregory Meyer</author>
 
     <buildtool_depend>catkin</buildtool_depend>
 
     <depend>nav_msgs</depend>
     <depend>sensor_msgs</depend>
-    <depend>tf2_ros</depend>
+    <depend>tf2</depend>
 </package>
