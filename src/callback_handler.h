@@ -2,11 +2,11 @@
 #define UMIGV_ENCODER_ODOMETRY_CALLBACK_HANDLER_H
 
 #include "base_state.h" // umigv::encoder_odometry::BaseState
-#include "umigv_utilities/types.hpp" // umigv::f64
 
 #include <nav_msgs/Odometry.h> // nav_msgs::Odometry
 #include <ros/publisher.h> // ros::Publisher
 #include <sensor_msgs/JointState.h> // sensor_msgs::JointState
+#include <umigv_utilities/types.hpp> // umigv::f64, umigv::usize
 
 #include <mutex> // std::mutex, std::lock_guard
 #include <stdexcept> // std::runtime_error
@@ -52,7 +52,7 @@ private:
     WheelState wheel_state_;
     const ros::Publisher publisher_;
     const f64 meters_per_rad_;
-    u32 seq_id_;
+    mutable u32 seq_id_;
 };
 
 } // namespace encoder_odometry

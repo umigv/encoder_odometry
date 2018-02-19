@@ -12,12 +12,10 @@
 #include <utility> // std::move
 #include <vector> // std::vector
 
-using umigv::get_parameter_fatal;
-using umigv::get_parameter_or;
-using umigv::encoder_odometry::CallbackHandler;
-using umigv::blocking_shutdown();
+using namespace umigv;
+using namespace umigv::encoder_odometry;
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char *argv[]) {
     ros::init(argc, argv, "encoder_odometry_node");
     ros::NodeHandle handle;
     ros::NodeHandle private_handle{ "~" };
@@ -110,7 +108,7 @@ int main(int argc, const char *argv[]) {
             "joint_states", 10, &CallbackHandler::update_state, &handler
         );
 
-    auto timer = handle.createTimer(rate, &CallbackHandler::publish_states,
+    auto timer = handle.createTimer(rate, &CallbackHandler::publish_state,
                                     &handler);
 
     ros::AsyncSpinner spinner{ std::thread::hardware_concurrency() };

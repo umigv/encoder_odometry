@@ -50,10 +50,10 @@ public:
     void update(f64 dx0, f64 dx1, ros::Time t) noexcept;
 
     // get the pose of the robot's base in 2D space
-    const Pose& pose() const noexcept;
+    const Pose2& pose() const noexcept;
 
     // get the twist of the robot's base in 2D space
-    const Twist& twist() const noexcept;
+    const Twist2& twist() const noexcept;
 
     // get the time of the most recent update to the robot's state
     ros::Time timestamp() const noexcept;

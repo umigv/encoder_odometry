@@ -1,15 +1,16 @@
 #include "base_state.h"
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2/Quaternion.h>
+#include <tf2/LinearMath/Quaternion.h>
+
+using namespace umigv;
 
 using umigv::encoder_odometry::Vector2;
 using umigv::encoder_odometry::Pose2;
 using umigv::encoder_odometry::Twist2;
-using umigv::encoder_odometry::BaseState2;
+using umigv::encoder_odometry::BaseState;
 
-static Vector2 Vector2::from_polar(const f64 angle,
-                                   const f64 magnitude) noexcept {
+Vector2 Vector2::from_polar(const f64 angle, const f64 magnitude) noexcept {
     return { magnitude * std::cos(angle), magnitude * std::sin(angle) };
 }
 
@@ -29,7 +30,7 @@ quaternion_from_yaw(const f64 yaw) noexcept {
     tf2::Quaternion orientation;
     orientation.setRPY(0.0, 0.0, yaw);
 
-    return tf2::toMsg(quaternion);
+    return tf2::toMsg(orientation);
 }
 
 geometry_msgs::Pose Pose2::to_message() const noexcept {
@@ -115,14 +116,14 @@ void BaseState::update(const f64 dx0, const f64 dx1,
     twist_.yaw_rate = dtheta / dt;
 }
 
-const Pose& BaseState::pose() const noexcept {
+const Pose2& BaseState::pose() const noexcept {
     return pose_;
 }
 
-const Twist& twist() const noexcept {
+const Twist2& BaseState::twist() const noexcept {
     return twist_;
 }
 
-ros::Time timestamp() const noexcept {
+ros::Time BaseState::timestamp() const noexcept {
     return timestamp_;
 }
