@@ -17,7 +17,7 @@ struct Parameters {
     std::string frame_id;
     std::string left_wheel_frame;
     std::string right_wheel_frame;
-    ros::Rate rate{ 0.0 };
+    ros::Rate rate{ 100.0 };
     std::vector<f64> covariance_matrix; // 6x6
     f64 diameter;
     f64 track;
@@ -37,7 +37,7 @@ static Parameters get_parameters(ros::NodeHandle &node) {
     params.rate = ros::Rate{ umigv::get_parameter_or(node, "rate", 20.0) };
 
     params.covariance_matrix =
-        umigv::get_parameter_fatal<CovarianceT>(node, "pose_covariance");
+        umigv::get_parameter_fatal<CovarianceT>(node, "covariance");
 
     if (params.covariance_matrix.size() != 36) {
         throw std::logic_error{ "get_parameters" };
@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
         .with_base_track(params.track)
         .with_left_wheel_frame(std::move(params.left_wheel_frame))
         .with_right_wheel_frame(std::move(params.right_wheel_frame))
+        .with_frame_id(std::move(params.frame_id))
         .with_covariance(std::move(params.covariance_matrix))
         .from_node(node, "encoders/twist", 10)
         .build();
