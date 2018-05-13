@@ -6,21 +6,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(encoder_odometry)
 
-find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs sensor_msgs
-                                        umigv_utilities tf2 tf2_geometry_msgs)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs roscpp
+                                        sensor_msgs umigv_utilities)
 
-catkin_package()
+find_package(Boost REQUIRED)
 
-include_directories(${catkin_INCLUDE_DIRS})
+catkin_package(CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs umigv_utilities
+               DEPENDS Boost)
 
-add_executable(encoder_odometry_node src/encoder_odometry_node.cpp
-                                     src/callback_handler.cpp
-                                     src/base_state.cpp)
-target_link_libraries(encoder_odometry_node ${catkin_LIBRARIES})
+include_directories(include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
+set(SOURCES src/twist_publisher.cpp)
+
+add_executable(encoder_odometry_node src/encoder_odometry_node.cpp ${SOURCES})
+target_link_libraries(encoder_odometry_node ${catkin_LIBRARIES}
+                                            ${Boost_LIBRARIES})
 add_dependencies(encoder_odometry_node ${catkin_EXPORTED_TARGETS})
 
 install(TARGETS encoder_odometry_node
-	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
