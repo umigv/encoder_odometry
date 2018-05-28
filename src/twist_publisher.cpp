@@ -82,7 +82,7 @@ static Twist2DStamped make_twist_2d(const State &current, const State &next,
     const f64 v_l = dp_l / dt;
     const f64 v_r = dp_r / dt;
 
-    return { next.stamp, (v_l + v_r) / 2.0, v_r - v_l / specs.base_track };
+    return { next.stamp, (v_l + v_r) / 2.0, (v_r - v_l) / specs.base_track };
 }
 
 static void update_twist(geometry_msgs::TwistWithCovarianceStamped &twist,
