@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include <umigv_utilities/zip.hpp>
+#include <umigv_utilities/ranges.hpp>
 
 namespace umigv {
 namespace encoder_odometry {
@@ -67,22 +67,57 @@ struct Twist2DStamped {
     f64 angular_z_velocity;
 };
 
-static Twist2DStamped make_twist_2d(const State &current, const State &next,
+static Twist2DStamped make_twist_2d(const boost::circular_buffer<State> &states,
                                     const BaseSpecifications &specs) {
-    const f64 dtheta_l = next.left_rotation - current.left_rotation;
-    const f64 dtheta_r = next.right_rotation - current.right_rotation;
+    if (states.size() < 2) {
+        throw std::invalid_argument{ "make_twist_2d" };
+    }
 
-     // + rotation -> + translation
-    const f64 dp_l = dtheta_l * specs.wheel_diameter / 2.0;
+    const std::tuple<f64, f64, ros::Duration> sums =
+        umigv::reduce(
+            umigv::map(
+                umigv::pairs(states),
+                [](auto &&pair) {
+                    const State &previous = pair.first;
+                    const State &current = pair.second;
+
+                    return std::make_tuple(
+                        current.left_rotation - previous.left_rotation,
+                        current.right_rotation - previous.right_rotation,
+                        current.stamp - previous.stamp
+                    );
+                }
+            ), [](auto &&lhs, auto &&rhs) {
+                return std::make_tuple(
+                    std::get<0>(lhs) + std::get<0>(rhs),
+                    std::get<1>(lhs) + std::get<1>(rhs),
+                    std::get<2>(lhs) + std::get<2>(rhs)
+                );
+            }
+        );
+
+    const auto num_pairs = static_cast<f64>(states.size() - 1);
+
+    const ros::Duration dt_bar{ std::get<2>(sums).toSec() / num_pairs };
+    const f64 dtheta_l_bar = std::get<0>(sums) / num_pairs;
+    const f64 dtheta_r_bar = std::get<1>(sums) / num_pairs;
+
+    // + rotation -> + translation
+    const f64 dp_l = dtheta_l_bar * specs.wheel_diameter / 2.0;
 
      // + rotation -> - translation
-    const f64 dp_r = -dtheta_r * specs.wheel_diameter / 2.0;
+    const f64 dp_r = -dtheta_r_bar * specs.wheel_diameter / 2.0;
 
-    const f64 dt = (next.stamp - current.stamp).toSec();
-    const f64 v_l = dp_l / dt;
-    const f64 v_r = dp_r / dt;
+    const f64 v_l = dp_l / dt_bar.toSec();
+    const f64 v_r = dp_r / dt_bar.toSec();
 
-    return { next.stamp, (v_l + v_r) / 2.0, (v_r - v_l) / specs.base_track };
+    Twist2DStamped twist;
+
+    twist.stamp = states.back().stamp;
+    twist.linear_x_velocity = (v_l + v_r) / 2.0;
+    twist.angular_z_velocity = (v_r - v_l) / specs.base_track;
+
+    return twist;
 }
 
 static void update_twist(geometry_msgs::TwistWithCovarianceStamped &twist,
@@ -135,7 +170,8 @@ TwistPublisherBuilder& TwistPublisherBuilder::with_left_wheel_frame(std::string 
     return *this;
 }
 
-TwistPublisherBuilder& TwistPublisherBuilder::with_right_wheel_frame(std::string frame) {
+TwistPublisherBuilder&
+TwistPublisherBuilder::with_right_wheel_frame(std::string frame) {
     if (left_frame_ && left_frame_.value() == frame) {
         throw std::invalid_argument{
             "TwistPublisherBuilder::with_left_wheel_frame"
@@ -147,7 +183,8 @@ TwistPublisherBuilder& TwistPublisherBuilder::with_right_wheel_frame(std::string
     return *this;
 }
 
-TwistPublisherBuilder& TwistPublisherBuilder::with_covariance(std::vector<f64> covariance) {
+TwistPublisherBuilder&
+TwistPublisherBuilder::with_covariance(std::vector<f64> covariance) {
     if (covariance.size() != 36) {
         throw std::invalid_argument{ "TwistPublisherBuilder::with_covariance" };
     }
@@ -157,7 +194,8 @@ TwistPublisherBuilder& TwistPublisherBuilder::with_covariance(std::vector<f64> c
     return *this;
 }
 
-TwistPublisherBuilder& TwistPublisherBuilder::with_frame_id(std::string frame) {
+TwistPublisherBuilder&
+TwistPublisherBuilder::with_frame_id(std::string frame) {
     twist_frame_ = std::move(frame);
 
     return *this;
@@ -166,7 +204,9 @@ TwistPublisherBuilder& TwistPublisherBuilder::with_frame_id(std::string frame) {
 TwistPublisherBuilder& TwistPublisherBuilder::from_node(
     ros::NodeHandle &node, const std::string &topic, const u32 queue_size
 ) {
-    publisher_ = node.advertise<geometry_msgs::TwistWithCovarianceStamped>(topic, queue_size);
+    using TwistT = geometry_msgs::TwistWithCovarianceStamped;
+
+    publisher_ = node.advertise<TwistT>(topic, queue_size);
 
     return *this;
 }
@@ -206,21 +246,20 @@ TwistPublisher TwistPublisherBuilder::build() {
 void TwistPublisher::update_joint_states(
     const sensor_msgs::JointState::ConstPtr &states_ptr
 ) {
-    if (states_ptr->header.stamp < state_.stamp) {
-        return;
-    }
-
     const auto maybe_next_state = detail::make_next_state(*states_ptr, frames_);
 
     if (!maybe_next_state) {
         return;
     }
 
-    const detail::Twist2DStamped next_twist =
-        detail::make_twist_2d(state_, maybe_next_state.value(), specs_);
+    states_.push_back(maybe_next_state.value());
+
+    if (states_.size() > 1) {
+        const detail::Twist2DStamped next_twist =
+            detail::make_twist_2d(states_, specs_);
     
-    state_ = maybe_next_state.value();
-    detail::update_twist(twist_, next_twist);
+        detail::update_twist(twist_, next_twist);
+    }
 }
 
 void TwistPublisher::publish_twist(const ros::TimerEvent&) {
@@ -229,13 +268,15 @@ void TwistPublisher::publish_twist(const ros::TimerEvent&) {
 }
 
 ros::Subscriber TwistPublisher::make_subscriber(ros::NodeHandle &node,
-                                const std::string &topic, u32 queue_size) {
+                                                const std::string &topic,
+                                                const u32 queue_size) {
     return node.subscribe<sensor_msgs::JointState>(
         topic, queue_size, &TwistPublisher::update_joint_states, this
     );
 }
 
-ros::Timer TwistPublisher::make_timer(const ros::NodeHandle &node, const ros::Rate rate) {
+ros::Timer TwistPublisher::make_timer(const ros::NodeHandle &node,
+                                      const ros::Rate rate) {
     return node.createTimer(rate, &TwistPublisher::publish_twist, this);
 }
 
@@ -244,7 +285,10 @@ TwistPublisher::TwistPublisher(
     geometry_msgs::TwistWithCovarianceStamped prototype,
     ros::Publisher publisher
 ) noexcept : specs_{ std::move(specs) }, frames_{ std::move(frames) },
-             twist_{ std::move(prototype) }, publisher_{ std::move(publisher) } { }
+             twist_{ std::move(prototype) },
+             publisher_{ std::move(publisher) } {
+    states_.set_capacity(16);
+}
 
 } // namespace encoder_odometry
 } // namespace umigv

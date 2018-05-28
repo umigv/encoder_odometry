@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <boost/circular_buffer.hpp>
 #include <boost/optional.hpp>
 
 #include <geometry_msgs/TwistWithCovarianceStamped.h>
@@ -82,7 +83,7 @@ private:
                    geometry_msgs::TwistWithCovarianceStamped prototype,
                    ros::Publisher publisher) noexcept;
 
-    State state_;
+    boost::circular_buffer<State> states_;
     BaseSpecifications specs_;
     Frames frames_;
     geometry_msgs::TwistWithCovarianceStamped twist_;
